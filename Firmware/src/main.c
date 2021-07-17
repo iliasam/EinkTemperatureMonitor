@@ -23,9 +23,9 @@ typedef enum
 } data_request_state_t;
 
 #define DATA_REQUEST_TIMEOUT_MS         (2000)
-#define DATA_REQUESTS_MAX_NUMBER        (3)
+#define DATA_REQUESTS_MAX_NUMBER        (5)
 
-#define MONITOR_UPDATE_PERIOD_MS        (5 * 60 * 1000)
+#define MONITOR_UPDATE_PERIOD_MS        (8 * 60 * 1000)
 
 /* Private variables ---------------------------------------------------------*/
 data_request_state_t data_request_state = DATA_REQUEST_IDLE;
@@ -48,11 +48,15 @@ int main()
   delay_ms(50);
   hardware_enable_power();
   go_to_sleep_mode(1000);
+  init_adc_single_measure();
+  delay_ms(8);
   dispaly_spi_init();
+  displayed_params.battery_voltage = measure_battery_voltage();
+  hardware_deinit_adc();
   
   displayed_params.update_counter = 
     hardware_rtc_read_16_bit_backup_value(BACKUP_UPDATE_CNT_REG);
-  displayed_params.battery_voltage = measure_battery_voltage();
+  
   if (displayed_params.battery_voltage < BATTER_LOW_THRESHOLD_V)
   {
     displayed_params.low_batt_flag = 1;
@@ -88,9 +92,9 @@ void main_monitor_handling(void)
       displayed_params.no_connection_flag = 1;
     
     monitor_updated = 1;
+    uart_handling_periph_deinit();
     draw_monitor();
     hardware_update_backup();
-    uart_handling_periph_deinit();
     dispaly_spi_deinit();
     hardware_disable_power();//All proccess are completed
     

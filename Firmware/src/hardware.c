@@ -33,7 +33,6 @@ void init_all_hardware(void)
   
   init_sys_clock();
   rtc_init();
-  init_adc_single_measure();
   RCC_GetClocksFreq (&RCC_Clocks);
   if (SysTick_Config(RCC_Clocks.SYSCLK_Frequency / 1000))
   { 
@@ -93,7 +92,8 @@ void init_sys_clock(void)
   RCC_HCLKConfig(RCC_SYSCLK_Div1);/* HCLK = SYSCLK */
   RCC_PCLK2Config(RCC_HCLK_Div1);/* PCLK2 = HCLK */
   RCC_PCLK1Config(RCC_HCLK_Div2);
-  RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_16);/* PLLCLK = 8MHz/2 * 16 = 64 MHz <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+  //RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_16);/* PLLCLK = 8MHz/2 * 16 = 64 MHz <<<<<<<<<<<<<<<<<<<<<<<<<<*/
+  RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_4);/* PLLCLK = 8MHz/2 * 4 = 16 MHz <<<<<<<<<<<<<<<<<<<<<<<<<<*/
   RCC_PLLCmd(ENABLE);/* Enable PLL */
   while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET){};/* Wait till PLL is ready */
   RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);/* Select PLL as system clock source */
@@ -127,6 +127,12 @@ void init_adc_single_measure(void)
   while(ADC_GetResetCalibrationStatus(BATERRY_ADC_NAME)){}; 
   ADC_StartCalibration(BATERRY_ADC_NAME);   
   while(ADC_GetCalibrationStatus(BATERRY_ADC_NAME)){};
+}
+
+void hardware_deinit_adc(void)
+{
+  ADC_Cmd(BATERRY_ADC_NAME, DISABLE);
+  ADC_DeInit(BATERRY_ADC_NAME);
 }
 
 

@@ -21,6 +21,7 @@ void hardware_enable_power(void);
 void hardware_disable_power(void);
 void go_to_standby_mode(uint32_t delay_ms);
 void hardware_update_backup(void);
+void hardware_deinit_adc(void);
 
 uint16_t hardware_rtc_read_16_bit_backup_value(uint16_t register_number);
 

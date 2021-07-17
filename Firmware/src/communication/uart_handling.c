@@ -105,6 +105,7 @@ void uart_handling_periph_deinit(void)
   GPIO_InitTypeDef  GPIO_InitStructure;
   USART_Cmd(UART_NAME, DISABLE);
   USART_DeInit(UART_NAME);
+  UART_RCC_FUNCTION(UART_RCC, DISABLE);
   
   GPIO_InitStructure.GPIO_Pin = UART_TX_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -113,6 +114,7 @@ void uart_handling_periph_deinit(void)
   
   GPIO_InitStructure.GPIO_Pin = UART_SET_PIN;
   GPIO_Init(UART_SET_GPIO, &GPIO_InitStructure);
+  
 }
 
 //Blocking!

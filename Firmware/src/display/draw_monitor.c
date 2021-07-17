@@ -22,6 +22,7 @@ void draw_big_minus(uint8_t x_start, uint16_t length);
 void draw_temprature_internal(void);
 void draw_small_minus(uint8_t x_start, uint8_t y_start);
 void draw_header(void);
+void draw_progress(void);
 
 
 /* Private functions ---------------------------------------------------------*/
@@ -36,20 +37,25 @@ void draw_monitor(void)
   {
     draw_image((uint8_t*)no_connection_symbol, 50, 50);
     display_draw_string("ÍÅÒ ÑÂßÇÈ !", 20, 160, FONT_SIZE_21, 0);
+    draw_progress();
     display_update();
     return;
   }
   
   draw_temprature();
   draw_temprature_internal();
-  
+  draw_progress();
+
+  display_update();//long!
+}
+
+void draw_progress(void)
+{
   uint16_t progress_length = 
     (displayed_params.update_counter + 1) * DISPLAY_WIDTH / MAX_UPDATE_COUNTER;
   
   draw_black_line2(0, progress_length, 198);
   draw_black_line2(0, progress_length, 199);
-  
-  display_update();//long!
 }
 
 void draw_header(void)
