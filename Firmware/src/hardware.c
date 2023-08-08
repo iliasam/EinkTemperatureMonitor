@@ -8,6 +8,7 @@
 #include "hardware.h"
 #include "gpio_common.h"
 
+
 #include "delay_us_timer.h"
 #include "stm32f10x_rtc.h"
 #include "stm32f10x_pwr.h"
@@ -183,6 +184,10 @@ void rtc_init(void)
   if (rtc_state != RTC_STATUS_INIT_DONE)
   {
     BKP_WriteBackupRegister(BACKUP_STATUS_REG, RTC_STATUS_INIT_DONE);
+    BKP_WriteBackupRegister(BACKUP_UPDATE_CNT_REG, 0);
+    BKP_WriteBackupRegister(BACKUP_RADIO_STATE_REG, 0);
+    BKP_WriteBackupRegister(BACKUP_INT_TEMPERATURE_REG, 0);
+    BKP_WriteBackupRegister(BACKUP_EXT_TEMPERATURE_REG, 0);
   }
   
   RTC_WaitForSynchro();
@@ -197,8 +202,8 @@ void rtc_init(void)
   while(RTC_GetFlagStatus(RTC_FLAG_SEC) == RESET);
 }
 
-//Update value of the counter in backup
-void hardware_update_backup(void)
+/// Update value of the counter in backup
+void hardware_update_backup(displayed_params_t *displayed_params)
 {
   uint16_t update_counter = 
     hardware_rtc_read_16_bit_backup_value(BACKUP_UPDATE_CNT_REG);
@@ -206,6 +211,18 @@ void hardware_update_backup(void)
   if (update_counter >= MAX_UPDATE_COUNTER)
     update_counter = 0;
   BKP_WriteBackupRegister(BACKUP_UPDATE_CNT_REG, update_counter);
+  
+  BKP_WriteBackupRegister(
+    BACKUP_INT_TEMPERATURE_REG, displayed_params->temperature1_deg);
+  
+  BKP_WriteBackupRegister(
+    BACKUP_EXT_TEMPERATURE_REG, displayed_params->ext_temperature_deg);
+  
+  if (displayed_params->no_connection_flag)
+      BKP_WriteBackupRegister(BACKUP_RADIO_STATE_REG, 0);
+  else
+      BKP_WriteBackupRegister(BACKUP_RADIO_STATE_REG, 1);
+  
 }
 
 
@@ -214,6 +231,9 @@ void hardware_update_backup(void)
 //Go to stanby - RAM is enabled, 2mA
 void go_to_sleep_mode(uint32_t delay_ms)
 {
+  //HAL_Delay(delay_ms); //for debugger
+  //return;
+  
   RTC_SetAlarm(RTC_GetCounter() + (delay_ms / 10));
   RTC_WaitForLastTask();
   

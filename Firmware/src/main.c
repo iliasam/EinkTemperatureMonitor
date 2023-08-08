@@ -23,7 +23,7 @@ typedef enum
 } data_request_state_t;
 
 #define DATA_REQUEST_TIMEOUT_MS         (2000)
-#define DATA_REQUESTS_MAX_NUMBER        (5)
+#define DATA_REQUESTS_MAX_NUMBER        (10)
 
 #define MONITOR_UPDATE_PERIOD_MS        (8 * 60 * 1000)
 
@@ -32,17 +32,23 @@ data_request_state_t data_request_state = DATA_REQUEST_IDLE;
 uint32_t data_request_send_time = 0;
 uint8_t data_request_counter = 0;
 uint8_t monitor_updated = 0;
+uint8_t force_disp_update = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void main_send_data_request(void);
 void main_data_request_handling(void);
 void main_monitor_handling(void);
+uint8_t check_disp_need_update(void);
 
 
 /* Private functions ---------------------------------------------------------*/
 int main()
 {
   init_all_hardware();
+  if (GPIO_ReadInputDataBit(BUTTON_GPIO, BUTTON_PIN) != 0)//pressed
+  {
+    force_disp_update = 1;
+  }
   delay_ms(1000);//for connection by debugger
   uart_handling_init();
   delay_ms(50);
@@ -68,10 +74,11 @@ int main()
     displayed_params.is_charging_flag = 1;
   }
   
-  displayed_params.ext_temperature_deg = 44;
-  displayed_params.temperature1_deg = 44;
-  
 
+  
+  displayed_params.ext_temperature_deg = 60;
+  displayed_params.temperature1_deg = 60;
+  
   while(1)
   {
     uart_handling_rx_data();
@@ -93,8 +100,12 @@ void main_monitor_handling(void)
     
     monitor_updated = 1;
     uart_handling_periph_deinit();
-    draw_monitor();
-    hardware_update_backup();
+    uint8_t need_update_disp = check_disp_need_update();
+    if (need_update_disp || force_disp_update)
+    {
+      draw_monitor();
+    }
+    hardware_update_backup(&displayed_params);//Save data to RAM
     dispaly_spi_deinit();
     hardware_disable_power();//All proccess are completed
     
@@ -119,6 +130,10 @@ void main_data_request_handling(void)
       return;
     }
     
+    uint32_t delay_ms = DATA_REQUEST_TIMEOUT_MS;
+    if (data_request_counter >= (DATA_REQUESTS_MAX_NUMBER / 2))
+      delay_ms = delay_ms * 2;//increase delay
+    
     if (CHECK_TIMER(data_request_send_time, DATA_REQUEST_TIMEOUT_MS))
     {
       //timeout
@@ -133,12 +148,34 @@ void main_data_request_handling(void)
 void main_send_data_request(void)
 {
   mavlink_request_temperatures();
-  //mavlink_request_beep();
+ // mavlink_request_beep();
   SET_TIMESTAMP(data_request_send_time);
   data_request_counter++;
   data_request_state = DATA_REQUEST_WAIT_RX;
 }
 
+/// Compare new received values  with old values
+/// Return 1 if need update
+uint8_t check_disp_need_update(void)
+{
+  uint16_t old_state = 
+    hardware_rtc_read_16_bit_backup_value(BACKUP_RADIO_STATE_REG);
+  uint16_t new_state = (displayed_params.no_connection_flag) ? 0 : 1;
+  if (old_state != new_state)
+    return 1;
+  
+  int16_t temp_int = 
+    (int16_t)hardware_rtc_read_16_bit_backup_value(BACKUP_INT_TEMPERATURE_REG);
+  int16_t temp_ext = 
+    (int16_t)hardware_rtc_read_16_bit_backup_value(BACKUP_EXT_TEMPERATURE_REG);
+  
+  if (temp_int != displayed_params.temperature1_deg)
+    return 1;
+  if (temp_ext != displayed_params.ext_temperature_deg)
+    return 1;
+  
+  return 0;
+}
 
 int putchar(int c)
 {

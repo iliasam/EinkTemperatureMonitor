@@ -5,6 +5,7 @@ typedef struct
 {
   int16_t ext_temperature_deg;
   
+  /// Internal
   int16_t temperature1_deg;
   int16_t temperature2_deg;
   

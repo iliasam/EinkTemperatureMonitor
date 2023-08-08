@@ -9,6 +9,9 @@
 
 #define MCU_VREF                        3.27f //volts
 
+#define BUTTON_GPIO                     GPIOA
+#define BUTTON_PIN                      GPIO_Pin_0
+
 // Baterry ADC *************************************************************
 
 //Battery low
